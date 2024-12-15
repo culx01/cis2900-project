@@ -1,0 +1,106 @@
+import csv
+import random
+from datetime import datetime, timedelta
+
+class Product:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+class Order:
+    def __init__(self, order_id, products):
+        self.order_id = order_id
+        self.products = products  # List of product objects
+
+    def total_price(self):
+        return sum(product.price for product in self.products)
+
+class Customer:
+    def __init__(self, customer_id):
+        self.customer_id = customer_id
+        self.orders = []
+
+    def create_order(self, order_id, products):
+        order = Order(order_id, products)
+        self.orders.append(order)
+        return order
+
+class Store:
+    def __init__(self, store_id):
+        self.store_id = store_id
+        self.customers = {}
+
+    def get_or_create_customer(self, customer_id):
+        if customer_id not in self.customers:
+            self.customers[customer_id] = Customer(customer_id)
+        return self.customers[customer_id]
+
+    def record_order(self, customer_id, order_id, products):
+        customer = self.get_or_create_customer(customer_id)
+        return customer.create_order(order_id, products)
+
+class Corporation:
+    def __init__(self):
+        self.stores = {}
+
+    def get_or_create_store(self, store_id):
+        if store_id not in self.stores:
+            self.stores[store_id] = Store(store_id)
+        return self.stores[store_id]
+
+    def generate_sales_report(self, filename):
+        record_count = 0
+        max_records = 125000            #Controls the amount of generated records 
+
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Date", "Time", "StoreID", "CustomerID", "OrderID", "Product Name", "Product Price"])
+
+            for store in self.stores.values():
+                for customer in store.customers.values():
+                    for order in customer.orders:
+                        for product in order.products:
+                            if record_count >= max_records:
+                                return
+                            order_time = datetime.now() - timedelta(days=random.randint(0, 365))
+                            writer.writerow([
+                                order_time.strftime("%Y-%m-%d"),
+                                order_time.strftime("%H:%M:%S"),
+                                store.store_id,
+                                customer.customer_id,
+                                order.order_id,
+                                product.name,
+                                product.price
+                            ])
+                            record_count += 1
+
+#Main program 
+corp = Corporation()
+
+#Simulation data
+product_catalog = [
+    Product('Driscolls Blueberries', 5.99),
+    Product('Alisan Kitchen Mats', 29.99),
+    Product('Organic 2% Milk', 6.99),
+    Product('Goodfellow Grey T-shirt', 19.99),
+    Product('Apple AirPods Pro', 149.99),
+    Product('Tropicana Orange Juice', 4.89),
+    Product('Toll House Cookie Dough', 4.99),
+    Product('Daves Killer Bread', 6.85),
+    Product('Afflux Type-C', 5.99),
+    Product('Mobil 1 5W30 Oil', 27.99)
+]
+
+store_count = 850  #Adjusted for 100 stores
+for _ in range(store_count):
+    store = corp.get_or_create_store(f"{random.randint(1, 850)}")
+
+    for _ in range(random.randint(5, 45)):  #5-45 customers per store
+        customer_id = f"{random.randint(1, 999)}"
+        for _ in range(random.randint(1, 6)):  #1-6 orders per customer
+            order_id = f"{random.randint(1, 10)}"
+            products = random.sample(product_catalog, random.randint(1, 4))  #1-4 products per order
+            store.record_order(customer_id, order_id, products)
+
+#Generate sales data 
+corp.generate_sales_report("sales_data.csv")
